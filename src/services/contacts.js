@@ -1,10 +1,11 @@
 import { Contacts } from '../db/models/contact.js';
 import mongoose from 'mongoose';
+
 export const getContacts = async () => {
   const contacts = await Contacts.find();
-
   return contacts;
 };
+
 export const getContactById = async id => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return null;
@@ -12,33 +13,35 @@ export const getContactById = async id => {
   const contact = await Contacts.findById(id);
   return contact;
 };
+
 export const createContact = async data => {
   try {
-    const contact = await Contacts.create(data);
+    const contact = await Contacts.create({
+      name: data.name,
+      phoneNumber: data.phoneNumber,
+      email: data.email || null,
+      isFavourite: data.isFavourite !== undefined ? data.isFavourite : false,
+      contactType: data.contactType || null,
+    });
     return contact;
   } catch (error) {
     console.error('Error in createContact:', error);
     throw new Error(`Contact creation failed: ${error.message}`);
   }
 };
-export const deleteContact = async contactId => {
-  const contact = await Contacts.findOneAndDelete({
-    _id: contactId,
-  });
 
+export const deleteContact = async contactId => {
+  const contact = await Contacts.findOneAndDelete({ _id: contactId });
   return contact;
 };
+
 export const updateContact = async (contactId, payload, options = {}) => {
-  const rawResult = await Contacts.findOneAndUpdate({ _id: contactId }, payload, {
+  const updatedContact = await Contacts.findOneAndUpdate({ _id: contactId }, payload, {
     new: true,
-    includeResultMetadata: true,
     ...options,
   });
 
-  if (!rawResult || !rawResult.value) return null;
+  if (!updatedContact) return null;
 
-  return {
-    contact: rawResult.value,
-    isNew: Boolean(rawResult?.lastErrorObject?.upserted),
-  };
+  return updatedContact;
 };

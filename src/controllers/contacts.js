@@ -15,13 +15,14 @@ export const getContactsController = async (req, res) => {
     res.status(500).json({ message: 'Error fetching contacts', error: error.message });
   }
 };
+
 export const getContactByIdController = async (req, res, next) => {
   try {
     console.log('request params', req.params);
     const contact = await getContactById(req.params.id);
     console.log('we manage to get contact', contact);
     if (!contact) {
-      next(createHttpError(404, 'Student not found'));
+      next(createHttpError(404, 'Contact not found'));
       return;
     }
     res
@@ -31,14 +32,15 @@ export const getContactByIdController = async (req, res, next) => {
     res.status(500).json({ message: 'Error fetching contact', error: error.message });
   }
 };
+
 export const createContactController = async (req, res) => {
   try {
     console.log('Request body:', req.body);
 
-    if (!req.body.name || !req.body.phoneNumber || !req.body.contactType) {
+    if (!req.body.name || !req.body.phoneNumber) {
       return res.status(400).json({
         status: 400,
-        message: 'Bad Request: name, phoneNumber, and contactType are required',
+        message: 'Bad Request: name and phoneNumber are required',
       });
     }
 
@@ -50,7 +52,7 @@ export const createContactController = async (req, res) => {
       data: contact,
     });
   } catch (error) {
-    console.error('Error in createContactController:', error); // Лог ошибки
+    console.error('Error in createContactController:', error);
     res.status(500).json({
       status: 500,
       message: 'Something went wrong',
@@ -58,6 +60,7 @@ export const createContactController = async (req, res) => {
     });
   }
 };
+
 export const deleteContactController = async (req, res, next) => {
   const contactId = req.params.id;
 
@@ -70,6 +73,7 @@ export const deleteContactController = async (req, res, next) => {
 
   res.status(204).send();
 };
+
 export const patchContactController = async (req, res, next) => {
   const contactId = req.params.id;
   const result = await updateContact(contactId, req.body);
@@ -82,6 +86,6 @@ export const patchContactController = async (req, res, next) => {
   res.json({
     status: 200,
     message: `Successfully patched a contact!`,
-    data: result.student,
+    data: result,
   });
 };

@@ -9,55 +9,41 @@ import createHttpError from 'http-errors';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import { isValidObjectId } from 'mongoose';
 
 export const getContactsController = async (req, res) => {
   try {
     const { page = 1, perPage = 5 } = parsePaginationParams(req.query);
-    const { sortby, sortOrder } = parseSortParams(req.query);
+    const { sortBy, sortOrder } = parseSortParams(req.query);
+    console.log('sortby:', sortBy, 'sortOrder:', sortOrder);
     const filter = parseFilterParams(req.query);
-    const contacts = await getContacts({ page, perPage, sortby, sortOrder, filter });
-
-    res.status(200).json({
-      status: 200,
-      data: contacts,
-      message: 'Contacts retrieved successfully!',
-    });
+    // console.log('Параметры запроса:', req.query);
+    const contacts = await getContacts({ page, perPage, sortBy, sortOrder, filter });
+    res.status(200).json({ status: 200, data: contacts, message: 'Successfully found contacts!' });
   } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error fetching contacts',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error fetching contacts', error: error.message });
   }
 };
-
 export const getContactByIdController = async (req, res, next) => {
   try {
     const contact = await getContactById(req.params.id);
 
     if (!contact) {
-      return next(createHttpError(404, 'Contact not found'));
+      next(createHttpError(404, 'Contact not found'));
+      return;
     }
-
     res.status(200).json({
       status: 200,
       data: contact,
-      message: `Contact with ID ${req.params.id} retrieved successfully!`,
+      message: `Successfully found contact with id ${req.params.id}`,
     });
   } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error fetching contact',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error fetching contact', error: error.message });
   }
 };
-
 export const createContactController = async (req, res) => {
   try {
-    const { name, phoneNumber, contactType } = req.body;
-
-    if (!name || !phoneNumber || !contactType) {
+    if (!req.body.name || !req.body.phoneNumber || !req.body.contactType) {
       return res.status(400).json({
         status: 400,
         message: 'Bad Request: name, phoneNumber, and contactType are required',
@@ -68,70 +54,50 @@ export const createContactController = async (req, res) => {
 
     res.status(201).json({
       status: 201,
-      message: 'Contact created successfully!',
+      message: 'Successfully created a contact!',
       data: contact,
     });
   } catch (error) {
     res.status(500).json({
       status: 500,
-      message: 'Error creating contact',
-      error: error.message,
+      message: 'Something went wrong',
+      data: error.message,
     });
   }
 };
-
 export const deleteContactController = async (req, res, next) => {
-  try {
-    const contactId = req.params.id;
-    const contact = await deleteContact(contactId);
+  const contactId = req.params.id;
 
-    if (!contact) {
-      return next(createHttpError(404, 'Contact not found'));
-    }
+  const contact = await deleteContact(contactId);
 
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error deleting contact',
-      error: error.message,
-    });
+  if (!contact) {
+    next(createHttpError(404, 'Contact not found'));
+    return;
   }
-};
 
+  res.status(204).send();
+};
 export const patchContactController = async (req, res, next) => {
-  try {
-    const contactId = req.params.id;
-    const result = await updateContact(contactId, req.body);
+  const contactId = req.params.id;
+  const result = await updateContact(contactId, req.body);
 
-    if (!result) {
-      return next(createHttpError(404, 'Contact not found'));
-    }
-
-    res.status(200).json({
-      status: 200,
-      message: 'Contact updated successfully!',
-      data: result.contact,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Error updating contact',
-      error: error.message,
-    });
+  if (!result) {
+    next(createHttpError(404, 'Contact not found'));
+    return;
   }
+
+  res.json({
+    status: 200,
+    message: `Successfully patched a contact!`,
+    data: result.contact,
+  });
 };
 
-export const validateBody = schema => async (req, res, next) => {
-  try {
-    await schema.validateAsync(req.body, { abortEarly: false });
-    next();
-  } catch (error) {
-    next(
-      createHttpError(400, {
-        message: 'Bad Request',
-        error: error.details.map(e => e.message),
-      })
-    );
+export const isValidId = (req, res, next) => {
+  const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    next(createHttpError(404, 'Invalid contact id'));
   }
+
+  next();
 };

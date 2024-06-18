@@ -17,7 +17,6 @@ export const getContactsController = async (req, res) => {
     const { sortBy, sortOrder } = parseSortParams(req.query);
     console.log('sortby:', sortBy, 'sortOrder:', sortOrder);
     const filter = parseFilterParams(req.query);
-    // console.log('Параметры запроса:', req.query);
     const contacts = await getContacts({ page, perPage, sortBy, sortOrder, filter });
     res.status(200).json({ status: 200, data: contacts, message: 'Successfully found contacts!' });
   } catch (error) {
@@ -43,7 +42,7 @@ export const getContactByIdController = async (req, res, next) => {
 };
 export const createContactController = async (req, res) => {
   try {
-    if (!req.body.name || !req.body.phoneNumber || !req.body.contactType) {
+    if (!req.body.name || !req.body.phoneNumber) {
       return res.status(400).json({
         status: 400,
         message: 'Bad Request: name, phoneNumber, and contactType are required',
